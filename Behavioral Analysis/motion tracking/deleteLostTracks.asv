@@ -1,0 +1,27 @@
+
+        if isempty(tracks)
+            return;
+        end
+
+        invisibleForTooLong = 20;
+        ageThreshold = 10;
+
+        % Compute the fraction of the track's age for which it was visible.
+        ages = [tracks(:).age];
+        totalVisibleCounts = [tracks(:).totalVisibleCount];
+        visibility = totalVisibleCounts ./ ages;
+        visAge = totalVisibleCounts/(ages - invisibleForTooLong);
+        % Find the indices of 'lost' tracks.
+        lostInds = (ages < ageThreshold & visibility < 0.8) | ...
+            [tracks(:).consecutiveInvisibleCount] >= invisibleForTooLong;
+        keepInds = ((ages >= ageThreshold & visAge >= 0.8) & [tracks(:).consecutiveInvisibleCount] >= invisibleForTooLong) | ...
+            ((ages < ageThreshold & visAge >= 0.8) & [tracks(:).consecutiveInvisibleCount] >= invisibleForTooLong);
+        keepInds = keepInds - lostInds;
+        keepInds(keepInds < 0) = 0;
+        keepInds = logical(keepInds);
+        % Delete lost tracks.
+        if sum(keepInds) > 0
+            keepTracks(end+1:end+sum(keepInds)) = tracks(keepInds);
+        end
+        tracks = tracks(~lostInds);
+        
